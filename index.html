@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Electronic Component Recognition System</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        text-align: center;
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 2.5em;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 40px;
+        font-size: 1.1em;
+      }
+
+      .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 15px;
+        padding: 60px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 30px;
+      }
+
+      .upload-area:hover {
+        border-color: #764ba2;
+        background: #f8f9ff;
+      }
+
+      .upload-area.dragover {
+        background: #f0f4ff;
+        border-color: #764ba2;
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      .upload-icon {
+        font-size: 60px;
+        color: #667eea;
+        margin-bottom: 20px;
+      }
+
+      .upload-text {
+        font-size: 1.2em;
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .upload-hint {
+        color: #999;
+      }
+
+      .results-container {
+        display: none;
+        margin-top: 40px;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 30px;
+      }
+
+      .result-card {
+        background: #f8f9ff;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .result-card h3 {
+        color: #667eea;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .uploaded-image {
+        width: 100%;
+        max-height: 350px;
+        object-fit: contain;
+        border-radius: 10px;
+        background: white;
+        padding: 10px;
+      }
+
+      .component-name {
+        font-size: 2em;
+        font-weight: bold;
+        color: #333;
+        margin: 15px 0;
+      }
+
+      .component-value {
+        font-size: 1.8em;
+        color: #764ba2;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .confidence-badge {
+        display: inline-block;
+        background: #4caf50;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .color-bands {
+        margin: 15px 0;
+      }
+
+      .color-band {
+        display: inline-block;
+        padding: 8px 16px;
+        margin: 5px;
+        border-radius: 5px;
+        font-weight: bold;
+        text-transform: capitalize;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .color-band.black {
+        background: #000;
+      }
+      .color-band.brown {
+        background: #8b4513;
+      }
+      .color-band.red {
+        background: #ff0000;
+      }
+      .color-band.orange {
+        background: #ffa500;
+      }
+      .color-band.yellow {
+        background: #ffff00;
+        color: #333;
+      }
+      .color-band.green {
+        background: #008000;
+      }
+      .color-band.blue {
+        background: #0000ff;
+      }
+      .color-band.violet {
+        background: #9400d3;
+      }
+      .color-band.grey {
+        background: #808080;
+      }
+      .color-band.white {
+        background: #fff;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+      .color-band.gold {
+        background: #ffd700;
+        color: #333;
+      }
+      .color-band.silver {
+        background: #c0c0c0;
+        color: #333;
+      }
+
+      .description-box {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+        line-height: 1.6;
+        color: #555;
+      }
+
+      .specs-table {
+        width: 100%;
+        margin-top: 15px;
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+      }
+
+      .specs-table tr {
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .specs-table tr:last-child {
+        border-bottom: none;
+      }
+
+      .specs-table td {
+        padding: 12px 5px;
+      }
+
+      .specs-table td:first-child {
+        font-weight: bold;
+        color: #667eea;
+        width: 45%;
+      }
+
+      /* Resistor Calculator */
+      .calculator-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+      }
+
+      .calculator-card h3 {
+        color: white !important;
+        margin-bottom: 20px;
+      }
+
+      .calc-input-group {
+        margin-bottom: 15px;
+      }
+
+      .calc-input-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+      }
+
+      .calc-input-group select {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .calc-button {
+        width: 100%;
+        padding: 12px;
+        background: white;
+        color: #667eea;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1em;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .calc-button:hover {
+        background: #f0f0f0;
+      }
+
+      .calc-result {
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .calc-result-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .similar-images {
+        margin-top: 30px;
+      }
+
+      .similar-images h3 {
+        color: #667eea;
+        margin-bottom: 20px;
+        font-size: 1.8em;
+      }
+
+      .similar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+      }
+
+      .similar-item {
+        background: #f8f9ff;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        transition: transform 0.3s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .similar-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      .similar-image {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: white;
+      }
+
+      .similarity-score {
+        font-weight: bold;
+        color: #764ba2;
+        font-size: 1.1em;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        display: none;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-message {
+        background: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+        display: none;
+      }
+
+      @media (max-width: 1024px) {
+        .results-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .results-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 Electronic Component Recognition System</h1>
+      <p class="subtitle">
+        Advanced AI-powered component identification with instant analysis
+      </p>
+
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">Click to upload or drag and drop</div>
+        <p class="upload-hint">Supports: JPG, PNG (Max 16MB)</p>
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
+
+      <div class="error-message" id="errorMessage"></div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Analyzing component... Please wait</p>
+      </div>
+
+      <div class="results-container" id="results">
+        <div class="results-grid">
+          <div class="result-card">
+            <h3>📸 Uploaded Image</h3>
+            <img
+              id="uploadedImg"
+              class="uploaded-image"
+              src=""
+              alt="Uploaded component"
+            />
+          </div>
+
+          <div class="result-card">
+            <h3>🔍 Recognition Results</h3>
+            <div class="component-name" id="componentName">-</div>
+            <div class="confidence-badge" id="confidence">Accuracy: 100%</div>
+            <div class="component-value" id="componentValue"></div>
+            <div class="color-bands" id="colorBands"></div>
+
+            <div class="description-box" id="description">
+              Component description will appear here...
+            </div>
+
+            <div class="specs-table">
+              <table style="width: 100%">
+                <tbody id="specsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="result-card calculator-card">
+            <h3>🧮 Resistor Calculator</h3>
+
+            <div class="calc-input-group">
+              <label>Number of Bands:</label>
+              <select id="bandCount" onchange="updateBandInputs()">
+                <option value="4" selected>4 Bands</option>
+                <option value="5">5 Bands</option>
+              </select>
+            </div>
+
+            <div class="calc-input-group">
+              <label>Band 1 (1st Digit):</label>
+              <select id="band1">
+                <option value="0">Black (0)</option>
+                <option value="1" selected>Brown (1)</option>
+                <option value="2">Red (2)</option>
+                <option value="3">Orange (3)</option>
+                <option value="4">Yellow (4)</option>
+                <option value="5">Green (5)</option>
+                <option value="6">Blue (6)</option>
+                <option value="7">Violet (7)</option>
+                <option value="8">Grey (8)</option>
+                <option value="9">White (9)</option>
+              </select>
+            </div>
+
+            <div class="calc-input-group">
+              <label>Band 2 (2nd Digit):</label>
+              <select id="band2">
+                <option value="0" selected>Black (0)</option>
+                <option value="1">Brown (1)</option>
+                <option value="2">Red (2)</option>
+                <option value="3">Orange (3)</option>
+                <option value="4">Yellow (4)</option>
+                <option value="5">Green (5)</option>
+                <option value="6">Blue (6)</option>
+                <option value="7">Violet (7)</option>
+                <option value="8">Grey (8)</option>
+                <option value="9">White (9)</option>
+              </select>
+            </div>
+
+            <div class="calc-input-group" id="band3Group" style="display: none">
+              <label>Band 3 (3rd Digit - 5 band only):</label>
+              <select id="band3Digit">
+                <option value="0" selected>Black (0)</option>
+                <option value="1">Brown (1)</option>
+                <option value="2">Red (2)</option>
+                <option value="3">Orange (3)</option>
+                <option value="4">Yellow (4)</option>
+                <option value="5">Green (5)</option>
+                <option value="6">Blue (6)</option>
+                <option value="7">Violet (7)</option>
+                <option value="8">Grey (8)</option>
+                <option value="9">White (9)</option>
+              </select>
+            </div>
+
+            <div class="calc-input-group">
+              <label id="multiplierLabel">Band 3 (Multiplier):</label>
+              <select id="band3">
+                <option value="1">Black (×1)</option>
+                <option value="10">Brown (×10)</option>
+                <option value="100" selected>Red (×100)</option>
+                <option value="1000">Orange (×1k)</option>
+                <option value="10000">Yellow (×10k)</option>
+                <option value="100000">Green (×100k)</option>
+                <option value="1000000">Blue (×1M)</option>
+                <option value="0.1">Gold (×0.1)</option>
+                <option value="0.01">Silver (×0.01)</option>
+              </select>
+            </div>
+
+            <div class="calc-input-group">
+              <label id="toleranceLabel">Band 4 (Tolerance):</label>
+              <select id="band4">
+                <option value="±1%">Brown (±1%)</option>
+                <option value="±2%">Red (±2%)</option>
+                <option value="±5%" selected>Gold (±5%)</option>
+                <option value="±10%">Silver (±10%)</option>
+              </select>
+            </div>
+
+            <button class="calc-button" onclick="calculateResistance()">
+              Calculate
+            </button>
+
+            <div class="calc-result" id="calcResult" style="display: none">
+              <div>Resistance Value:</div>
+              <div class="calc-result-value" id="calcValue">1kΩ</div>
+              <div id="calcTolerance">±5%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="similar-images">
+          <h3>🔗 Similar Components Found in Database</h3>
+          <div class="similar-grid" id="similarGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const loading = document.getElementById("loading");
+      const results = document.getElementById("results");
+      const errorMessage = document.getElementById("errorMessage");
+
+      uploadArea.addEventListener("click", () => fileInput.click());
+
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("dragover");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      });
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) handleFile(file);
+      });
+
+      function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById("uploadedImg").src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        uploadComponent(file);
+      }
+
+      function showError(message) {
+        errorMessage.textContent = "Error: " + message;
+        errorMessage.style.display = "block";
+        setTimeout(() => {
+          errorMessage.style.display = "none";
+        }, 5000);
+      }
+
+      async function uploadComponent(file) {
+        loading.style.display = "block";
+        results.style.display = "none";
+        errorMessage.style.display = "none";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Upload failed");
+          }
+
+          const data = await response.json();
+
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displayResults(data);
+          }
+        } catch (error) {
+          showError("Error analyzing component: " + error.message);
+          console.error("Upload error:", error);
+        } finally {
+          loading.style.display = "none";
+        }
+      }
+
+      function displayResults(data) {
+        console.log("Received data:", data);
+
+        document.getElementById("componentName").textContent =
+          data.component_type || "Unknown";
+        document.getElementById("confidence").textContent =
+          `Accuracy: ${data.confidence || 0}%`;
+
+        const valueDiv = document.getElementById("componentValue");
+        if (data.value) {
+          let valueText = data.value;
+          if (data.tolerance) {
+            valueText += ` ${data.tolerance}`;
+          }
+          valueDiv.textContent = valueText;
+          valueDiv.style.display = "block";
+        } else {
+          valueDiv.style.display = "none";
+        }
+
+        const colorBandsDiv = document.getElementById("colorBands");
+        colorBandsDiv.innerHTML = "";
+        if (
+          data.color_bands &&
+          Array.isArray(data.color_bands) &&
+          data.color_bands.length > 0
+        ) {
+          const label = document.createElement("strong");
+          label.textContent = "Color Bands: ";
+          label.style.display = "block";
+          label.style.marginBottom = "10px";
+          colorBandsDiv.appendChild(label);
+
+          data.color_bands.forEach((color) => {
+            const band = document.createElement("span");
+            band.className = `color-band ${color}`;
+            band.textContent = color.charAt(0).toUpperCase() + color.slice(1);
+            colorBandsDiv.appendChild(band);
+          });
+        }
+
+        document.getElementById("description").textContent =
+          data.description || "No description available";
+
+        const specsBody = document.getElementById("specsBody");
+        specsBody.innerHTML = "";
+
+        if (data.specifications && typeof data.specifications === "object") {
+          Object.entries(data.specifications).forEach(([key, value]) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                        <td>${key}</td>
+                        <td>${value}</td>
+                    `;
+            specsBody.appendChild(row);
+          });
+        }
+
+        const similarGrid = document.getElementById("similarGrid");
+        similarGrid.innerHTML = "";
+
+        if (
+          data.similar_images &&
+          Array.isArray(data.similar_images) &&
+          data.similar_images.length > 0
+        ) {
+          data.similar_images.forEach((img, index) => {
+            const item = document.createElement("div");
+            item.className = "similar-item";
+            item.innerHTML = `
+                        <img class="similar-image" src="${img.path}" alt="Similar component">
+                        <div style="font-weight: 600; margin-bottom: 5px;">${img.name || "Similar Component"}</div>
+                        <div class="similarity-score">${img.similarity}% Match</div>
+                    `;
+            similarGrid.appendChild(item);
+          });
+        } else {
+          similarGrid.innerHTML =
+            '<p style="color: #666; text-align: center; grid-column: 1/-1;">No similar images found in database</p>';
+        }
+
+        results.style.display = "block";
+      }
+
+      function updateBandInputs() {
+        const bandCount = document.getElementById("bandCount").value;
+        const band3Group = document.getElementById("band3Group");
+        const multiplierLabel = document.getElementById("multiplierLabel");
+        const toleranceLabel = document.getElementById("toleranceLabel");
+
+        if (bandCount === "5") {
+          band3Group.style.display = "block";
+          multiplierLabel.textContent = "Band 4 (Multiplier):";
+          toleranceLabel.textContent = "Band 5 (Tolerance):";
+        } else {
+          band3Group.style.display = "none";
+          multiplierLabel.textContent = "Band 3 (Multiplier):";
+          toleranceLabel.textContent = "Band 4 (Tolerance):";
+        }
+      }
+
+      function calculateResistance() {
+        const bandCount = document.getElementById("bandCount").value;
+        const band1 = parseInt(document.getElementById("band1").value);
+        const band2 = parseInt(document.getElementById("band2").value);
+        const band3 = parseFloat(document.getElementById("band3").value);
+        const band4 = document.getElementById("band4").value;
+
+        let resistance;
+
+        if (bandCount === "5") {
+          const band3Digit = parseInt(
+            document.getElementById("band3Digit").value,
+          );
+          resistance = (band1 * 100 + band2 * 10 + band3Digit) * band3;
+        } else {
+          resistance = (band1 * 10 + band2) * band3;
+        }
+
+        let valueStr;
+        if (resistance >= 1e6) {
+          valueStr = `${(resistance / 1e6).toFixed(2)}MΩ`;
+        } else if (resistance >= 1e3) {
+          valueStr = `${(resistance / 1e3).toFixed(2)}kΩ`;
+        } else {
+          valueStr = `${resistance.toFixed(2)}Ω`;
+        }
+
+        document.getElementById("calcValue").textContent = valueStr;
+        document.getElementById("calcTolerance").textContent = band4;
+        document.getElementById("calcResult").style.display = "block";
+      }
+    </script>
+  </body>
+</html>
